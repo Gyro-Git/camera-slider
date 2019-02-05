@@ -1,3 +1,10 @@
+/* This program currently doesn't use the graphical interface. 
+The points are added in the setup() and SetEachTime() calculates each step 
+and pushes it trough serial port. You can also uncomment the makeStep() and
+it will move the motor but it'll also wait between each step so it might
+take a while
+*/
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -18,8 +25,9 @@ const int backButton = 9;
 
 const unsigned long numberOfSteps = 31000;
 //int motorSpeed = 1500;
-int pointX[10];
+int pointX[10]; //these are positions of the points on the OLED screen
 int pointY[10];
+// 10 is an arbitrary number and in hindsight, I would go for more
 
 unsigned int hours = 0;
 unsigned int minutes = 0;
@@ -28,7 +36,7 @@ unsigned long seconds = 20;
 void setup() {
   Serial.begin(57600);
   //display setup
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //you might have to adjust the address based on the oled you have
   display.clearDisplay();
   SetTopText("READY");
   display.drawLine(0, 8, 128, 8, WHITE);
@@ -54,7 +62,7 @@ void loop() {
   //SetEachTime();
 }
 
-void SerialPoints() {
+void SerialPoints() { //send coordinates of points trough serail port
   Serial.print(F("X: "));
   for (int i = 0; i < 10 ; i++) {
     Serial.print(pointX[i]);
@@ -120,7 +128,7 @@ void ClearTopText(int start, int finish) {
   display.fillRect(start, 0, finish, 8, BLACK);
 }
 
-void ResetPoints() {
+void ResetPoints() { //clears all points and creates only straight line trouh the middle
   pointX[0] = 0;   //0
   pointY[0] = 36;  //28
   pointX[1] = 127; //127
@@ -203,7 +211,7 @@ void DrawCursor(int x, int y) {
   display.drawLine(x, y - 2, x, y + 2, WHITE);
 }
 
-void PointsMenu() { //
+void PointsMenu() { // graphical interface - drawing points. currently unused
   /*  int Xpos = 64;
     int Ypos = 33;
     unsigned long timer = millis();
@@ -263,7 +271,7 @@ void PointsMenu() { //
     }*/
 }
 
-void TimeMenu() { //
+void TimeMenu() { // graphical interface - setting time. currently unused
   /*if(GetNumberOfPoints() < 2){  //in case only one or none points are set
     ClearTopText();
     SetTopText(F("Adding points..."));
@@ -362,7 +370,7 @@ void SetEachTime() {
     scaledPointX[i] = map(pointX[i], 0, 128, 0, numberOfSteps);
     scaledPointY[i] = map(pointY[i], 10, 64, numberOfSteps * 0.078125, numberOfSteps / 2);
   }
-  //
+  // assigning how much time each line in the graph gets by calculating volume under the graph
   unsigned long volume[10];
   float portion[10] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
   long combinedVolume = 0;
@@ -376,10 +384,10 @@ void SetEachTime() {
   }
   for (int i = 0; i < GetNumberOfPoints(); i++) {
     float percentage = (float(volume[i]) / float(combinedVolume)) * 100;
-    portion[i] = float(seconds) / 100 * percentage;
+    portion[i] = float(seconds) / 100 * percentage; //actual time for each line
   }
-  bool straightLine = true;
-  int curveIndex = 0;
+  bool straightLine = true; //They are all straight duh, horizontal line would probably be better
+  int curveIndex = 0;       // This is just counter of how many non horizontal lines are in the graph
   for (int i = 0; i < GetNumberOfPoints() - 1; i++) {
     if (pointY[i] != pointY[i + 1]) {
       //straightLine = false;
@@ -387,6 +395,10 @@ void SetEachTime() {
     }
     curveIndex++;
   }
+  //This is the part where I'm bad at math and it doesn't work
+  //Each line is defined with linear function y=ax+b
+  //I don't know how much deeper I should go because it doesn't work so...
+  
   for (int currentLine = 0; currentLine < (GetNumberOfPoints()-1); currentLine++) {
     //find 2 points
     unsigned long pointAy = 0;
